@@ -1,0 +1,26 @@
+{
+    "id": "4EA0FBCB",
+    "path": "~/Documents/CADF/R/split_transaction_file_to_CADF.R",
+    "project_path": "R/split_transaction_file_to_CADF.R",
+    "type": "r_source",
+    "hash": "210249337",
+    "contents": "",
+    "dirty": false,
+    "created": 1664582039528.0,
+    "source_on_save": false,
+    "relative_order": 2,
+    "properties": {
+        "source_window_id": "",
+        "Source": "Source",
+        "cursorPosition": "3,29",
+        "scrollLine": "0"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1663523955,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1663523955,
+    "read_only": false,
+    "read_only_alternatives": []
+}

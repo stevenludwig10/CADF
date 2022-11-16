@@ -1,0 +1,82 @@
+# CH1 - Introduction and Approach
+## What is Customer Analytics? / Landscape and definitions
+## Role of Data
+## The Customer Analytics Data Format (CADF)
+## Why the Marketing Industry Needs a Customer Analytics Data Format
+### Challenges
+## The "2 Data Point" Approach to Customer Analytics
+## Prerequsites
+# CH2 - Data Preparation Techniques
+## Quick introductions to R, for Marketers
+## Date Computations
+### Resources
+## Data Aggregation
+#### Calculating a min purchase date for a customer
+#### Calculating a max purchase date for a customer
+#### Calculating Total Number of Purchases
+## Writing Functions
+#### Breaking Problems into Functions
+## Merging Datasets
+### Merging in R
+#### Resources
+## Accessing/Modifying Rows and Columns
+## data frame example
+## Run Length Encoding and Purchase Strings
+## Probability Foundations
+#### Poisson Distribution
+#### Gamma Distribution
+#### Geometric Distribution
+#### Beta Distribution
+# CH 2.5 Advanced Data Preparation
+## Separating data preparation tasks into functions
+### Example -  Process Data by ID ()
+## Purchase Strings
+## Modeling Drop-out Processes
+## Modeling Variation in Transaction Rates of Active Customers 
+## Transition Matrix
+# CH 3 - Converting Transactional Data to the CADF
+### Outlining the Customer Analytics Data Format (CADF)
+### Loading CADF Resources
+### Reading in Transactional Data
+###  Converting raw transactional data to CA format.
+### Various attributes in the CADF profile
+#### Dataset at the customer level - what is happening
+#### Dataset at the customer level
+#### Calculations "months from first purchase"
+#### Purchase String
+#### Creating a Logistic Regression Dataset [single customer] from the CADF
+#### Logistic Regression data - multiple customers
+# CH 4 - Developing Planning tools for Analytics
+### Planning Diagram
+### Retention Rate Simulator
+### The Simple Retention Model
+# CH5 - Analytic Techniques for Beginners
+### Retention Table Survival Analysis
+### Migration Model -- Illustration of Approach
+#### Simple Demo
+### Migration Model -- Using the Customer Analytics Approach
+### Preparing a Dataset for Logistic Regression
+### The Simple Retention Model - w/ Time Variation
+### Combining Customer Data for Cohort Study
+# CH6 - Analytics for Uncertain Situations
+###  Buy Until you Die (BTYD) Probabilty Models
+#### Pareto/NBD (older model introduced in 1987)
+#### BG/NBD 
+#### BG/BB (used for discrete yearly or monthly situations)
+### Migration Model
+#### Concept of a transition matrix
+#### Estimating transition matrix from data
+### Calculating Rec at "Time-Of"
+# CH7 - The CADF in Microsoft Environments
+#### Microsoft Excel Online (Office 365)
+#### Using ExcelScripts
+### Using OneDrive for Business
+### Power Automate -
+### Oracle Sql
+#### Key Concepts
+##### 1 - The "with as" approach in writing SQL
+##### 2 - Pulling the transactions dataset
+##### 3 - Accounting for times when a purchase is not made
+##### 4 - Listagg
+#### The Complete Process
+# References

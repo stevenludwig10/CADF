@@ -1,0 +1,76 @@
+
+
+#' Can be utilized directly.  However, it is advised to use the Customer$new() class.  
+#' 
+#' Function is called as part of the Customer R6 class.
+#'
+#' @param x Transactional data associated with customer id.  
+#' @param id.column  Description goes here. 
+#' @param date.column.  Description goes here.
+#' @return purchase string in 0/1 format
+
+#' @export create.purchase.string
+create.purchase.string <- function(x, id.column, date.column, mode="") {
+  
+  x[[date.column]] <- as.Date(x[[date.column]], "%m/%d/%Y")
+  
+  #one time purchase
+  if(nrow(x) == 1) {
+    
+    if (mode == "matrix") {
+      return (as.matrix(1))
+    }
+    
+    return ("1")
+  }
+  
+  #multitime buyers
+  
+  x[["T"]] <- ceiling(as.numeric(x[[date.column]] - min(x[[date.column]]))/30)
+  
+  #multiple purchases on same (FIRST) day
+  if(sum(x[["T"]]) == 0) {
+    
+    if (mode == "matrix") {
+      return (as.matrix(1))
+    }
+    
+    return ("1")
+  }
+  
+  ps <-x[["T"]]
+  ps <- ps[ps > 0]
+  ps <- unique(ps)
+  
+  if (length(ps) == 0) {
+    return(NA)
+  }
+  
+  ps.template <- min(ps) : max(ps)
+  ps.template %in% ps
+  
+
+  psMatrix <- as.numeric(ps.template %in% ps)
+  
+  if (mode == "matrix") {
+    return (as.matrix(psMatrix))
+  }
+  
+  
+  if (mode == "yearly") {
+    ps <- paste(psMatrix, collapse="")
+    ps <- strsplit(ps, "(?<=.{12})", perl = TRUE)[[1]]
+    ps <- unlist(lapply(ps, function(x) ifelse(as.numeric(x) > 0, 1, 0)))
+    psMatrix <- ps
+  }
+  
+  
+  
+  ps <- paste(psMatrix, collapse = "")
+  
+  
+  
+  
+  return (ps)
+  
+}

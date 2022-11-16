@@ -1,0 +1,26 @@
+{
+    "id": "28243CDC",
+    "path": "~/Documents/CADF/R/ps_to_T.R",
+    "project_path": "R/ps_to_T.R",
+    "type": "r_source",
+    "hash": "647544543",
+    "contents": "",
+    "dirty": false,
+    "created": 1664652031734.0,
+    "source_on_save": false,
+    "relative_order": 8,
+    "properties": {
+        "source_window_id": "",
+        "Source": "Source",
+        "cursorPosition": "28,27",
+        "scrollLine": "0"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1663016868,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1663016868,
+    "read_only": false,
+    "read_only_alternatives": []
+}

@@ -1,0 +1,512 @@
+#'@field last_purchase_date.  Last purchaes date for the customer.
+last_purchase_date = NULL,
+#' #' @field repeat_customer.  Marked yes if the following conditions
+#' are true.  The customer has more than one transaction.  The second transaction
+#' date is greater than the first transaction date.
+repeat_customer = NULL ,
+#'  #' @field  T a measure of time between first date of activity and purchase.
+T  = NULL,
+#' @field transaction_range_complete  shows a consecutive sequence usually beginning at 1 to madf_customerimum T
+transaction_range_complete = NULL,
+#' @field logistic_modeling_matridf_customer  customer-level data for logistic modeling.  Each row represents T and 0 is no purchase and 1 is purchase
+logistic_modeling_matridf_customer = NULL,
+#' @field purchase_count purchase count
+purchase_count = NULL,
+#' @field data  Holds data at the customer level
+data = NULL,
+#' @description
+#' Creates a CADF profile for a given customer
+#' based on the input transactional data
+#' @return A new `Customer` object.  Converted transactional data to CADF format.
+#' To access cadf[[1]], etc...
+#' Represents customer data (for a particular id) in the "CADF" format
+initialize = function(...) {
+stopifnot(CADF::qc_transactional_data(df_customer) == 2)
+browser()
+#' @field Tdays to compute "days from first purchase"
+df_customer$Tdays <- ceiling(as.numeric(df_customer[[2]] - min(df_customer[[2]])))
+#to compute "months from first purchase"
+df_customer$month_yr <- format(as.Date(df_customer[[2]]), "%Y-%m")
+df_customer$Tmonths <- ceiling(as.numeric(df_customer[[2]] - min(df_customer[[2]])) / 30)
+#to compute "weeks from first purchase
+df_customer$yr_week = paste(format(as.Date(df_customer[[2]]), "%Y") , "_" , format(as.Date(df_customer[[2]]), "%V"), sep =
+"")
+df_customer$Tweeks <- as.numeric(df_customer[[2]] - min(df_customer[[2]])) / 7
+#sort for output
+df_customer <- df_customer[order(df_customer[[2]]), ]
+self$data = df_customer
+self$id = min(df_customer[, 1])
+self$transaction_dates <- unique(df_customer[, 2])
+self$transaction_months <- unique(df_customer$month_yr)
+self$first_purchase_date <- min(df_customer[, 2])
+self$last_purchase_date <- madf_customer(df_customer[, 2])
+self$repeat_customer <-
+ifelse(length(unique(self$transaction_months)) > 1, "Y", "N")
+#construct the purchase string
+self$purchase_string <- NULL
+self$transaction_dates = format(self$transaction_dates, "%Y_%m")
+self$purchase_count = length(unique(self$transaction_dates))  #monthly count
+self$purchase_string <-
+create.purchase.string(df_customer, names(df_customer[1]), names(df_customer[2]))
+self$purchase_stringM <-
+create.purchase.string(df_customer, names(df_customer[1]), names(df_customer[2]), mode = "matridf_customer")
+self$purchase_stringF <- frequency_by_T(df_customer)
+self$T <- ps_to_T(self$purchase_string)
+self$Freq <- sum(self$purchase_stringM)
+self$transaction_range_complete <- nchar(self$purchase_string)
+self$logistic_modeling_matridf_customer <-
+f_CustomerModelingMatridf_customer(self$T)
+self$transaction_string <-
+paste(
+ifelse(self$logistic_modeling_matridf_customer[, 2] == 0, "Y", "N"),
+sep = "",
+collapse = ""
+)
+#analysis by day
+self$daily$purchase_count <- length(self$transaction_dates)
+self$daily$frequency <- length(unique(self$transaction_dates))
+#analysis by week
+self$weekly$Frequency <- length(unique(df_customer$yr_week))
+self$output <- list(c(self$global, self$monthly))
+self$payload <- jsonlite::toJSON(self$output)
+}
+)
+)
+cust <- split.transaction.file_to_CADF(transactions)
+cust <- split.transaction.file_to_CADF(transactions)
+data(transactions)
+cust <- split.transaction.file_to_CADF(transactions)
+cust <- split.transaction.file_to_CADF(transactions, timing="month")
+head(transactions)
+a <- split(transactions, transactions$ID)
+cust <- split.transaction.file_to_CADF(a)
+head(a)
+head(a)
+a[[1]]
+a[2]
+library(CADF)
+cust <- split.transaction.file_to_CADF(a)
+head(a)
+lapply(a, print)
+lapply(a, browser)
+x
+ls()
+X
+ls()
+q
+q()
+exit
+library(CADF)
+cust <- split.transaction.file_to_CADF(a)a
+cust <- split.transaction.file_to_CADF(a)
+x <- a$`2`
+x
+library(CADF)
+cust <- split.transaction.file_to_CADF(a)
+library(CADF)
+cust <- split.transaction.file_to_CADF(a)
+x
+test <- Customer$new(x)
+library(CADF)
+test <- Customer$new(x)
+library(CADF)
+test <- Customer$new(x)
+x
+test <- Customer$new(x =x)
+library(CADF)
+library(CADF)
+test <- Customer$new(x)
+str(x)
+test <- Customer$new(df_customer = x)
+library(CADF)
+test <- Customer$new(df_customer = x)
+#' R6 Class representing a customer.  Otherwise known as the CADF.
+#'
+#' Call Customer$new() to convert transactional data to CADF format
+# Common ways that this class is used.
+# 1.) Load transactional data.  Make sure to format dates and only pull ID and prchase date
+# If you are testing send a single customerid and data for a single customer to id_to_CADF.
+# If your data contains multiple customer id's
+# 2.) Split the data from 2 using the R split function
+# 3.) Call -> split.transaction.file_to_CADF
+#' @edf_customerport Customer
+#' @param ... All arguements in list
+#'
+#' data(transactions)
+#' a <- split(transactions, transactions$ID)
+#' cust <- split.transaction.file_to_CADF(a)
+#' cust[[1]]
+#'
+Customer2 <- R6::R6Class(
+"Customer",
+public = list(
+#' @field output Stores all information in R format at the customer level.
+output = NULL ,
+#'@field payload Stores all computed customer information in JSON format.  This is not quite an API but designed so that customer information can be imported to other formats and systems.
+payload = NULL,
+#'@field df_customer a data frame that stores purchase information for a single customer
+df_customer = NULL,
+#' @field id The customer id.  This will be the same ID as provided in the input transaction file.
+id = NULL,
+#' @field study_name.  A name to associate with the cohort study.#The name can be whatever is easiest to associate with the set of customer id and dates included in
+#' the analysis.
+study_name = "Customer Study",
+#' @field study_begin_date  Begin date of the customer study.  In theory this should be min(TRANSACTION_DATE) for each customer in the dataset.
+study_begin_date = NULL,
+#' @field timing.
+#' Monthly timing computes T as months. Most commonly utilized and is the default.
+timing = NULL,
+#' @field transaction_dates.  Description goes here
+transaction_dates = NULL,
+#' @field first_purchase_date.  First purchase date for the customer.
+first_purchase_date = NULL,
+#'@field last_purchase_date.  Last purchaes date for the customer.
+last_purchase_date = NULL,
+#' #' @field repeat_customer.  Marked yes if the following conditions
+#' are true.  The customer has more than one transaction.  The second transaction
+#' date is greater than the first transaction date.
+repeat_customer = NULL ,
+#'  #' @field  T a measure of time between first date of activity and purchase.
+T  = NULL,
+#' @field transaction_range_complete  shows a consecutive sequence usually beginning at 1 to madf_customerimum T
+transaction_range_complete = NULL,
+#' @field logistic_modeling_matridf_customer  customer-level data for logistic modeling.  Each row represents T and 0 is no purchase and 1 is purchase
+logistic_modeling_matridf_customer = NULL,
+#' @field purchase_count purchase count
+purchase_count = NULL,
+#' @field data  Holds data at the customer level
+data = NULL,
+#' @description
+#' Creates a CADF profile for a given customer
+#' based on the input transactional data
+#' @return A new `Customer` object.  Converted transactional data to CADF format.
+#' To access cadf[[1]], etc...
+#' Represents customer data (for a particular id) in the "CADF" format
+initialize = function(x) {
+stopifnot(CADF::qc_transactional_data(df_customer) == 2)
+self$df_customer <- x
+#' @field Tdays to compute "days from first purchase"
+df_customer$Tdays <- ceiling(as.numeric(df_customer[[2]] - min(df_customer[[2]])))
+#to compute "months from first purchase"
+df_customer$month_yr <- format(as.Date(df_customer[[2]]), "%Y-%m")
+df_customer$Tmonths <- ceiling(as.numeric(df_customer[[2]] - min(df_customer[[2]])) / 30)
+#to compute "weeks from first purchase
+df_customer$yr_week = paste(format(as.Date(df_customer[[2]]), "%Y") , "_" , format(as.Date(df_customer[[2]]), "%V"), sep =
+"")
+df_customer$Tweeks <- as.numeric(df_customer[[2]] - min(df_customer[[2]])) / 7
+#sort for output
+df_customer <- df_customer[order(df_customer[[2]]), ]
+self$data = df_customer
+self$id = min(df_customer[, 1])
+browser()
+self$transaction_dates <- unique(df_customer[, 2])
+self$transaction_months <- unique(df_customer$month_yr)
+self$first_purchase_date <- min(df_customer[, 2])
+self$last_purchase_date <- madf_customer(df_customer[, 2])
+self$repeat_customer <-
+ifelse(length(unique(self$transaction_months)) > 1, "Y", "N")
+#construct the purchase string
+self$purchase_string <- NULL
+self$transaction_dates = format(self$transaction_dates, "%Y_%m")
+self$purchase_count = length(unique(self$transaction_dates))  #monthly count
+self$purchase_string <-
+create.purchase.string(df_customer, names(df_customer[1]), names(df_customer[2]))
+self$purchase_stringM <-
+create.purchase.string(df_customer, names(df_customer[1]), names(df_customer[2]), mode = "matridf_customer")
+self$purchase_stringF <- frequency_by_T(df_customer)
+self$T <- ps_to_T(self$purchase_string)
+self$Freq <- sum(self$purchase_stringM)
+self$transaction_range_complete <- nchar(self$purchase_string)
+self$logistic_modeling_matridf_customer <-
+f_CustomerModelingMatridf_customer(self$T)
+self$transaction_string <-
+paste(
+ifelse(self$logistic_modeling_matridf_customer[, 2] == 0, "Y", "N"),
+sep = "",
+collapse = ""
+)
+#analysis by day
+self$daily$purchase_count <- length(self$transaction_dates)
+self$daily$frequency <- length(unique(self$transaction_dates))
+#analysis by week
+self$weekly$Frequency <- length(unique(df_customer$yr_week))
+self$output <- list(c(self$global, self$monthly))
+self$payload <- jsonlite::toJSON(self$output)
+}
+)
+)
+test <- Customer2$new(df_customer = x)
+test <- Customer2$new(x)
+#' R6 Class representing a customer.  Otherwise known as the CADF.
+#'
+#' Call Customer$new() to convert transactional data to CADF format
+# Common ways that this class is used.
+# 1.) Load transactional data.  Make sure to format dates and only pull ID and prchase date
+# If you are testing send a single customerid and data for a single customer to id_to_CADF.
+# If your data contains multiple customer id's
+# 2.) Split the data from 2 using the R split function
+# 3.) Call -> split.transaction.file_to_CADF
+#' @edf_customerport Customer
+#' @param ... All arguements in list
+#'
+#' data(transactions)
+#' a <- split(transactions, transactions$ID)
+#' cust <- split.transaction.file_to_CADF(a)
+#' cust[[1]]
+#'
+Customer2 <- R6::R6Class(
+"Customer",
+public = list(
+#' @field output Stores all information in R format at the customer level.
+output = NULL ,
+#'@field payload Stores all computed customer information in JSON format.  This is not quite an API but designed so that customer information can be imported to other formats and systems.
+payload = NULL,
+#'@field df_customer a data frame that stores purchase information for a single customer
+df_customer = NULL,
+#' @field id The customer id.  This will be the same ID as provided in the input transaction file.
+id = NULL,
+#' @field study_name.  A name to associate with the cohort study.#The name can be whatever is easiest to associate with the set of customer id and dates included in
+#' the analysis.
+study_name = "Customer Study",
+#' @field study_begin_date  Begin date of the customer study.  In theory this should be min(TRANSACTION_DATE) for each customer in the dataset.
+study_begin_date = NULL,
+#' @field timing.
+#' Monthly timing computes T as months. Most commonly utilized and is the default.
+timing = NULL,
+#' @field transaction_dates.  Description goes here
+transaction_dates = NULL,
+#' @field first_purchase_date.  First purchase date for the customer.
+first_purchase_date = NULL,
+#'@field last_purchase_date.  Last purchaes date for the customer.
+last_purchase_date = NULL,
+#' #' @field repeat_customer.  Marked yes if the following conditions
+#' are true.  The customer has more than one transaction.  The second transaction
+#' date is greater than the first transaction date.
+repeat_customer = NULL ,
+#'  #' @field  T a measure of time between first date of activity and purchase.
+T  = NULL,
+#' @field transaction_range_complete  shows a consecutive sequence usually beginning at 1 to madf_customerimum T
+transaction_range_complete = NULL,
+#' @field logistic_modeling_matridf_customer  customer-level data for logistic modeling.  Each row represents T and 0 is no purchase and 1 is purchase
+logistic_modeling_matridf_customer = NULL,
+#' @field purchase_count purchase count
+purchase_count = NULL,
+#' @field data  Holds data at the customer level
+data = NULL,
+#' @description
+#' Creates a CADF profile for a given customer
+#' based on the input transactional data
+#' @return A new `Customer` object.  Converted transactional data to CADF format.
+#' To access cadf[[1]], etc...
+#' Represents customer data (for a particular id) in the "CADF" format
+initialize = function(x) {
+stopifnot(CADF::qc_transactional_data(df_customer) == 2)
+browser()
+self$df_customer <- x
+#' @field Tdays to compute "days from first purchase"
+df_customer$Tdays <- ceiling(as.numeric(df_customer[[2]] - min(df_customer[[2]])))
+#to compute "months from first purchase"
+df_customer$month_yr <- format(as.Date(df_customer[[2]]), "%Y-%m")
+df_customer$Tmonths <- ceiling(as.numeric(df_customer[[2]] - min(df_customer[[2]])) / 30)
+#to compute "weeks from first purchase
+df_customer$yr_week = paste(format(as.Date(df_customer[[2]]), "%Y") , "_" , format(as.Date(df_customer[[2]]), "%V"), sep =
+"")
+df_customer$Tweeks <- as.numeric(df_customer[[2]] - min(df_customer[[2]])) / 7
+#sort for output
+df_customer <- df_customer[order(df_customer[[2]]), ]
+self$data = df_customer
+self$id = min(df_customer[, 1])
+browser()
+self$transaction_dates <- unique(df_customer[, 2])
+self$transaction_months <- unique(df_customer$month_yr)
+self$first_purchase_date <- min(df_customer[, 2])
+self$last_purchase_date <- madf_customer(df_customer[, 2])
+self$repeat_customer <-
+ifelse(length(unique(self$transaction_months)) > 1, "Y", "N")
+#construct the purchase string
+self$purchase_string <- NULL
+self$transaction_dates = format(self$transaction_dates, "%Y_%m")
+self$purchase_count = length(unique(self$transaction_dates))  #monthly count
+self$purchase_string <-
+create.purchase.string(df_customer, names(df_customer[1]), names(df_customer[2]))
+self$purchase_stringM <-
+create.purchase.string(df_customer, names(df_customer[1]), names(df_customer[2]), mode = "matridf_customer")
+self$purchase_stringF <- frequency_by_T(df_customer)
+self$T <- ps_to_T(self$purchase_string)
+self$Freq <- sum(self$purchase_stringM)
+self$transaction_range_complete <- nchar(self$purchase_string)
+self$logistic_modeling_matridf_customer <-
+f_CustomerModelingMatridf_customer(self$T)
+self$transaction_string <-
+paste(
+ifelse(self$logistic_modeling_matridf_customer[, 2] == 0, "Y", "N"),
+sep = "",
+collapse = ""
+)
+#analysis by day
+self$daily$purchase_count <- length(self$transaction_dates)
+self$daily$frequency <- length(unique(self$transaction_dates))
+#analysis by week
+self$weekly$Frequency <- length(unique(df_customer$yr_week))
+self$output <- list(c(self$global, self$monthly))
+self$payload <- jsonlite::toJSON(self$output)
+}
+)
+)
+test <- Customer2$new(x)
+#' R6 Class representing a customer.  Otherwise known as the CADF.
+#'
+#' Call Customer$new() to convert transactional data to CADF format
+# Common ways that this class is used.
+# 1.) Load transactional data.  Make sure to format dates and only pull ID and prchase date
+# If you are testing send a single customerid and data for a single customer to id_to_CADF.
+# If your data contains multiple customer id's
+# 2.) Split the data from 2 using the R split function
+# 3.) Call -> split.transaction.file_to_CADF
+#' @edf_customerport Customer
+#' @param ... All arguements in list
+#'
+#' data(transactions)
+#' a <- split(transactions, transactions$ID)
+#' cust <- split.transaction.file_to_CADF(a)
+#' cust[[1]]
+#'
+Customer2 <- R6::R6Class(
+"Customer",
+public = list(
+#' @field output Stores all information in R format at the customer level.
+output = NULL ,
+#'@field payload Stores all computed customer information in JSON format.  This is not quite an API but designed so that customer information can be imported to other formats and systems.
+payload = NULL,
+#'@field df_customer a data frame that stores purchase information for a single customer
+df_customer = NULL,
+#' @field id The customer id.  This will be the same ID as provided in the input transaction file.
+id = NULL,
+#' @field study_name.  A name to associate with the cohort study.#The name can be whatever is easiest to associate with the set of customer id and dates included in
+#' the analysis.
+study_name = "Customer Study",
+#' @field study_begin_date  Begin date of the customer study.  In theory this should be min(TRANSACTION_DATE) for each customer in the dataset.
+study_begin_date = NULL,
+#' @field timing.
+#' Monthly timing computes T as months. Most commonly utilized and is the default.
+timing = NULL,
+#' @field transaction_dates.  Description goes here
+transaction_dates = NULL,
+#' @field first_purchase_date.  First purchase date for the customer.
+first_purchase_date = NULL,
+#'@field last_purchase_date.  Last purchaes date for the customer.
+last_purchase_date = NULL,
+#' #' @field repeat_customer.  Marked yes if the following conditions
+#' are true.  The customer has more than one transaction.  The second transaction
+#' date is greater than the first transaction date.
+repeat_customer = NULL ,
+#'  #' @field  T a measure of time between first date of activity and purchase.
+T  = NULL,
+#' @field transaction_range_complete  shows a consecutive sequence usually beginning at 1 to madf_customerimum T
+transaction_range_complete = NULL,
+#' @field logistic_modeling_matridf_customer  customer-level data for logistic modeling.  Each row represents T and 0 is no purchase and 1 is purchase
+logistic_modeling_matridf_customer = NULL,
+#' @field purchase_count purchase count
+purchase_count = NULL,
+#' @field data  Holds data at the customer level
+data = NULL,
+#' @description
+#' Creates a CADF profile for a given customer
+#' based on the input transactional data
+#' @return A new `Customer` object.  Converted transactional data to CADF format.
+#' To access cadf[[1]], etc...
+#' Represents customer data (for a particular id) in the "CADF" format
+initialize = function(x) {
+browser()
+stopifnot(CADF::qc_transactional_data(df_customer) == 2)
+self$df_customer <- x
+#' @field Tdays to compute "days from first purchase"
+df_customer$Tdays <- ceiling(as.numeric(df_customer[[2]] - min(df_customer[[2]])))
+#to compute "months from first purchase"
+df_customer$month_yr <- format(as.Date(df_customer[[2]]), "%Y-%m")
+df_customer$Tmonths <- ceiling(as.numeric(df_customer[[2]] - min(df_customer[[2]])) / 30)
+#to compute "weeks from first purchase
+df_customer$yr_week = paste(format(as.Date(df_customer[[2]]), "%Y") , "_" , format(as.Date(df_customer[[2]]), "%V"), sep =
+"")
+df_customer$Tweeks <- as.numeric(df_customer[[2]] - min(df_customer[[2]])) / 7
+#sort for output
+df_customer <- df_customer[order(df_customer[[2]]), ]
+self$data = df_customer
+self$id = min(df_customer[, 1])
+self$transaction_dates <- unique(df_customer[, 2])
+self$transaction_months <- unique(df_customer$month_yr)
+self$first_purchase_date <- min(df_customer[, 2])
+self$last_purchase_date <- madf_customer(df_customer[, 2])
+self$repeat_customer <-
+ifelse(length(unique(self$transaction_months)) > 1, "Y", "N")
+#construct the purchase string
+self$purchase_string <- NULL
+self$transaction_dates = format(self$transaction_dates, "%Y_%m")
+self$purchase_count = length(unique(self$transaction_dates))  #monthly count
+self$purchase_string <-
+create.purchase.string(df_customer, names(df_customer[1]), names(df_customer[2]))
+self$purchase_stringM <-
+create.purchase.string(df_customer, names(df_customer[1]), names(df_customer[2]), mode = "matridf_customer")
+self$purchase_stringF <- frequency_by_T(df_customer)
+self$T <- ps_to_T(self$purchase_string)
+self$Freq <- sum(self$purchase_stringM)
+self$transaction_range_complete <- nchar(self$purchase_string)
+self$logistic_modeling_matridf_customer <-
+f_CustomerModelingMatridf_customer(self$T)
+self$transaction_string <-
+paste(
+ifelse(self$logistic_modeling_matridf_customer[, 2] == 0, "Y", "N"),
+sep = "",
+collapse = ""
+)
+#analysis by day
+self$daily$purchase_count <- length(self$transaction_dates)
+self$daily$frequency <- length(unique(self$transaction_dates))
+#analysis by week
+self$weekly$Frequency <- length(unique(df_customer$yr_week))
+self$output <- list(c(self$global, self$monthly))
+self$payload <- jsonlite::toJSON(self$output)
+}
+)
+)
+test <- Customer2$new(x)
+stopifnot(CADF::qc_transactional_data(df_customer) == 2)
+x
+self$df_customer = x
+df_customer
+self
+library(CADF)
+test <- Customer2$new(x)
+test <- Customer$new(x)
+Customer
+Customer$new
+library(CADF)
+test <- Customer$new(x)
+test <- Customer$new(x)
+devtools::load_all(".")
+test <- Customer$new(x)
+test <- Customer$new(x)
+x
+test <- Customer$new(x)
+test <- Customer$new(x)
+x
+ls()
+test <- Customer$new(x)
+x
+df_customer
+test <- Customer$new(x)
+x
+CADF::qc_transactional_data(x)
+x
+x
+CADF::qc_transactional_data(x)
+x
+test <- Customer$new(x)
+library(CADF)
+test <- Customer$new(x)
+library(CADF)
+library(CADF)
+test <- Customer$new(x)
+x
+ls
+force(single_customer_to_CADF)

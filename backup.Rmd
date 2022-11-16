@@ -1,0 +1,1128 @@
+
+
+### Processing a complete transactions file - Converting raw transactional data to CA format.
+
+To start we will illustrate the conversion of transactional data for one customer. If you know the specific id of the customer for which you want to generate insights for use the id_to_CADF function.  This function filters your data for a specific id, loads all customers with that id and generates a CADF profile for that id.
+
+```{r results='asis'}
+
+customer.5 <- CADF::id_to_CADF(5, transactions)
+
+```
+
+Next, we wlll do the same on the split dataset
+Taking first 100 entries only for time purposes
+
+``` {r}
+
+
+cadf <- CADF::split.transaction.file_to_CADF(transactions.by.id[1:100])
+
+```
+
+
+### Various attributes in the CADF profile
+
+``` {r }
+profile <- cadf[[5]]
+
+```
+
+
+#### Dataset at the customer level - what is happening
+
+
+
+``` {r}
+
+weeks.diff <-difftime(max(transactions$date), min(transactions$date), units='weeks')
+months.diff <- weeks.diff / 4
+ceiling(as.double(months.diff))
+
+
+```
+
+
+
+
+Second step is combining the summary data and the transactional data
+
+``` {r}
+
+
+#data.combined <- merge(x = transactions,
+          ##             y = customer.summary, by = "ID", all.x = TRUE)
+#data.combined$NUM_ITEMS <- NULL
+#data.combined$TOTAL <- NULL
+#colnames(data.combined) <- c("id", "txdate", "firsttxdate")
+
+
+
+```
+
+Create a column for months between transaction date and first transaction date
+
+``` {r}
+
+#data.combined$months <- as.integer(ceiling((data.combined$txdate - #data.combined$firsttxdate) / 30))
+
+```
+
+
+
+
+Next, create a data frame
+
+``` {r }
+
+#ps <- data.frame(id = data.combined$id, months=data.combined$months, X1=1)
+
+```
+
+Create a matrix.  Each column represents a customer.  Each month is a purchase period.
+
+``` {r}
+
+##vv <- xtabs(ps$X1 ~ ps$id + ps$months)
+
+
+##head(vv)
+
+
+```
+
+
+
+
+
+
+
+#### Dataset at the customer level
+
+
+
+The dataset used to compute the customer profile
+
+``` {r}
+
+profile$data
+
+```
+#### Calculations "months from first purchase"
+
+Transaction range:  Calculated from the purchase string starting at T = 1.  Let's look at this example  
+
+``` {r}
+
+abc <- profile$data
+
+profile$monthly$transaction_range_complete
+
+```
+
+``` {r}
+
+profile$monthly$T
+profile$monthly$T_active
+
+```
+
+``` {r}
+
+profile$monthly$transaction_range_complete
+
+```
+#### Purchase String
+
+
+
+
+Using the customer analytics framework:
+The steps to read in the transactions file and create a purchase string for each customer are below:
+
+
+Read in the transactions file
+``` {r}
+
+transactions <- read.csv("transactions.csv")
+transactions$PURCHASE_DATE <- as.Date(transactions$PURCHASE_DATE, "%m/%d/%Y")
+transactions.by.id <- split(transactions, transactions$ID)
+```
+
+Convert the customer file to CADF format.  This is done by looking at the split transactions file and creating a new customer from each set of customer transactions. 
+``` {r}
+testy <- lapply(transactions.by.id, function(x) CADF::Customer$new(x))
+
+```
+
+All information (including the purchase string) was precomputed into the CADF format. Next steps are to
+
+- figure out how many time periods we want to analyze
+- extract the purchase strings for each customer
+
+Here is an example for customer 4:  Note that this example shows 12 timeperiods but we are going to truncate at 5.
+
+
+
+``` {r}
+
+testy[[5]]$monthly$purchase_string
+nchar(testy[[5]]$monthly$purchase_string)
+substring(testy[[5]]$monthly$purchase_string, 1, 5)
+
+```
+
+  Now it is necessary to convert all those purchase strings into a matrix for mathematical computaiton.  This is done using the ca_to_ps_matrix function.  The inputs for this function are
+
+- the name of the variable containing your data (in CADF format)
+- the number of timeperiods for analysis
+
+
+``` {r}
+
+
+m <- CADF::ca_to_ps_matrix(testy, 5)
+knitr::kable(head(m))
+```
+
+Above, you will see a matrix with N rows and 5 columns.  1 represents purchase 0 represents no purchase.  Further chapters will discuss how to analytically handle this matrix and compute insights from it.
+
+
+We'll have a x by y matirx.
+
+
+\[
+\begin{bmatrix}
+1 & 0 & 0 & 0\\
+0 & 1 & 0 & 0\\
+0 & 0 & \ddots & 0\\
+0 & 0 & 0 & n
+\end{bmatrix}_{n\times n}
+\]
+
+
+
+
+#### Creating a Logistic Regression Dataset [single customer] from the CADF
+
+The CADF stores a cancellation variable (T) that is utilized to create a logistic regression model.
+
+T will represent a strict cancellation time but leeway can be given in the creation of T.  To give leeway, think of how your business counts active customers.  Can they take a break for 1 or 2 months and still be considered active?
+
+Example -> (daily)
+Example -> (cancellation and switch ... either consumer contacted you to cancel or you have data that indicates they no longer are doing business with you)
+
+
+
+``` {r}
+
+cadf[[1]]$data
+cadf[[1]]$monthly$T
+
+cadf[[2]]$data
+cadf[[2]]$monthly$T
+
+cadf[[3]]$data
+cadf[[3]]$monthly$purchase_string
+cadf[[3]]$monthly$T
+
+cadf[[4]]$data
+
+cadf[[5]]$data
+cadf[[5]]$monthly
+
+```
+
+T for for a single customer - give 2 month leeway ...
+
+#### Logistic Regression data - multiple customers
+
+
+Retrieve "T" for all customers in the CADF format
+``` {r}
+
+
+all_T <- lapply(cadf, function(x) return(x$monthly$T))
+all_T <- unlist(all_T)
+
+
+
+```
+
+Convert each T to a logistic modeling matrix
+
+``` {r}
+
+all_T
+
+logisticmodel <- lapply(all_T, CADF::f_CustomerModelingMatrix)
+
+#logisticmodel[[1]]
+#logisticmodel[[2]]
+#logisticmodel[[3]]
+
+lmodel <- do.call(rbind, logisticmodel)
+
+
+```
+
+
+
+
+
+# CH 4 - Developing Planning tools for Analytics
+
+Planning for customer analytics starts with understanding your customers.  Particularly, how often those questions transact with your business.
+
+
+### Planning Diagram
+
+
+| Step | Description
+|--------|----------
+|  Relationship Duration | Over 1 year, 2 years, 5 years, infinity |
+| Contractual or Non-Contract|  Are customers bound by contractual agreements? |
+|Segmentation | Can actionable segments be formed? |
+|Retention Trends for your Industry | Is it expensive to keep customers?  Is it possible to keep customers at reasonable cost and effort? |
+|Profit| How much profit do you get from customers on a monthly or yearly basis?|
+
+
+
+
+
+### Retention Rate Simulator
+
+This section gives the reader a toolkit, enabling insights into customer retention.  Having a general idea between retention rates and customer profitability.
+
+
+Approach:
+
+
+
+How much profit you get from your customer on a monthly basis?
+
+
+
+
+What your cost of capital "discount rate" is?
+
+
+  Common costs of capital include ---
+
+
+How long to simulate?
+
+  Most analysis should be 1 year out and if possible 2 years.
+
+
+What your constant retention rate is.
+What are exceptions to that constant retention rate?  E.g. contract renewals where customers have higher chance of leaving.
+
+
+
+
+Retention rates
+
+  Some retention patterns are below:
+
+
+Constant retention rate over 2 years:  
+
+```{r, echo = FALSE}
+
+t2 <- (1:24)
+months <- c("JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEPT", "OCT", "NOV", "DEC")
+r <- rep(.90, 24)
+
+par(las = 3)
+plot(t2, r, main = "Constant Retention Rate over 2 Years", xlab="Month", ylab="Retention Rate", xaxt='n')
+axis(1, at=1:24, labels=rep(months,2))
+lines(r)
+
+
+
+
+```
+
+Retention Rate with Customers at Risk Every 3 months
+
+```{r, echo=FALSE}
+t2 <- (1:24)
+r <- rep(.90, 24)
+r[c(3,6,9,12,15,18, 21)] <- .6
+
+
+par(las = 3)
+plot(t2, r, main = "Retention Rate Dips Every Three Month", xlab="Month", ylab="Retention Rate", xaxt='n')
+axis(1, at=1:24, labels=rep(months,2))
+lines(r)
+
+monthly.payment <- 50
+discount.rate <- .01
+num.months <- 24
+
+
+v <- retention_simulator(monthly.payment, discount.rate, num.months, r)
+
+knitr::kable(v)
+
+
+
+```
+
+Retention Dips Once every Year (e.g. contractual scenario)
+
+```{r, echo = FALSE}
+
+t2 <- (1:24)
+r <- rep(.90, 24)
+r[12] <- .5
+r[24] <- .5
+
+
+par(las = 3)
+plot(t2, r, main = "Retention Rate Dips Every Year", xlab="Month", ylab="Retention Rate", xaxt='n')
+axis(1, at=1:24, labels=rep(months,2))
+lines(r)
+
+
+monthly.payment <- 50
+discount.rate <- .01
+num.months <- 24
+
+
+v <- retention_simulator(monthly.payment, discount.rate, num.months, r)
+
+knitr::kable(v)
+
+```
+
+
+
+
+
+
+Scenario 1 variables:
+
+```{r, echo = FALSE}
+monthly.payment <- 50
+discount.rate <- .01
+num.months <- 90
+
+
+print.scenario <- function(monthly.payment, discount.rate, num.months) {
+  a <- paste("Monthly Payment: ", monthly.payment)
+  b <- paste("Discount rate: " , discount.rate)
+  c <- paste("Number of Months: ", num.months)
+  knitr::kable(c(a,b,c))
+}
+
+
+print.scenario(monthly.payment, discount.rate, num.months)
+
+
+
+```
+
+Assumption for retention rate projection
+
+``` {r}
+
+
+#r <- c(.80, .90, .95)
+#r <- rep(r, length.out = num.months)
+#v <- retention_simulator(monthly.payment, discount.rate, num.months, r)
+
+#knitr::kable(head(v))
+
+monthly.payment <- 50
+discount.rate <- .01
+num.months <- 90
+
+r <- c(.80, .90, .95)
+r <- rep(r, length.out = num.months)
+v <- retention_simulator(monthly.payment, discount.rate, num.months, r)
+
+knitr::kable(head(v))
+
+
+```
+
+
+
+
+
+
+### The Simple Retention Model
+
+A simple retention model is a logistic regression model utilized to generate retention rate estimates.
+
+The model takes the form:
+
+\begin{verbatim}
+cancel ~ T
+\end{verbatim}
+
+The retention rate is
+
+1 - exp(model intercept)
+
+
+Let's run a simple, simple retention model for three customers.  Assume all customers start in January at Time 1.
+
+
+Customer 1 Data:  Starts in January and cancels at the end of March.
+
+``` {r}
+
+customer1 <- data.frame(Time = c(1,2,3),
+                        Cancel = c(0,0,1))
+
+
+knitr::kable(customer1)
+```
+
+Customer 2 Data
+
+``` {r}
+
+customer2 <- data.frame(Time = c(1,2,3,4,5),
+                        Cancel = c(0,0,0,0,1))
+
+
+knitr::kable(customer2)
+```
+
+
+``` {r}
+customer3 <- data.frame(Time = c(1,2,3,4,5,6,7,8,9,10),
+                        Cancel =c(0,0,0,0,0,0,0,0,0,1))
+
+customers <- rbind(customer1,customer2,customer3)
+
+customers
+
+model <- glm(customers$Cancel ~ customers$Time, family = binomial, data = customers)
+
+1 - exp(model$coefficients[1])
+```
+
+
+
+Second ... run the simple retention model on the cd now data ... using the data generated above.
+
+``` {r results = 'asis'}
+
+#ca_SRM(ld)
+
+
+```
+
+# CH5 - Analytic Techniques for Beginners
+
+### Retention Table Survival Analysis
+
+
+Retention rates can be computed from a technique known as survival analysis.  Think of survival analysis as ...
+
+``` {r, echo=FALSE, results = 'asis'}
+
+#cancellation matrix
+p <- 12
+tm <- 1:p
+
+num.cancel <- c(0,4,16,20,37,28,61,24,19,13,10,13)
+num.continue <- c(3,0,2,1,7,33,49,63,30,16,34,188)
+
+cl <- data.frame(tm, num.cancel, num.continue)
+colnames(cl) <- c("Time", "# of Customers Cancelling", "Not Cancelling")
+
+knitr::kable(cl)
+
+```
+
+Prepare the data for modeling:
+
+``` {r}
+
+a <- reshape(data = cl, direction='long',
+             v.name= "value", varying = 2:3, idvar="Time")
+row.names(a) <- NULL
+colnames(a) <- c("time", "cancel", "count")
+a$cancel <- ifelse(a$cancel == 2, 0, a$cancel)
+knitr::kable(a)
+```
+Build the model:
+``` {r,results = 'asis'}
+
+model <- survival::survfit(survival::Surv(a$time, a$cancel) ~ 1, conf.type = "log-log", weights=a$count)
+
+options(digits = 0)
+m <- data.frame(model$time, model$n.risk, model$n.event, model$surv)
+
+xtable::xtable(m)
+
+```
+Draw insights about customer retention:
+```{r}
+
+sm <- summary(model)
+plot(model)
+title("Survival rate")
+
+options(digits = 2)
+plot(model$surv)
+
+```
+
+Generating a retention table for planning:
+
+arguement | description
+----------|--------------
+MonthlyPayment | monthly payment from customer
+duration | Number of months in analysis
+discountrate | Cost of borrowing cash
+retentionmatrix | retention rate exceptions
+defaultretntionrate | default retntion rate
+
+
+
+
+
+### Migration Model -- Illustration of Approach
+
+
+The next step is to compute various statistics.
+
+We want to evaluate each customer's recency and frequency at each timepoint.  This requires analyzing run lengths at each position in our matrix.  This is done with the stats.timeof function.  Let's look at customer 1's statistics at T = 5
+
+``` {r, echo = FALSE}
+
+m <- matrix(nrow = 20000, ncol = 10)
+colnames(m) <- 1:10
+rownames(m) <- 1:20000
+m <- apply(m, c(1,2), function(x) sample(c(0,1),1))
+m[,1] <- 1
+
+
+v <- CADF::stats.timeof(m)
+
+s <- v[[1]][[5]]
+
+```
+
+From there, we can derive the recency and frequency "at the time of" using R's rle object.
+
+``` {r}
+
+CADF::recency_from_rle(s)
+
+CADF::frequency_from_rle(s)
+
+
+```
+
+Now lets compute "time-of" metrics for customer 1, starting with frequency
+
+
+``` {r, echo = FALSE}
+f <- lapply(v[[1]], CADF::frequency_from_rle)
+
+plot(1:length(f), unlist(f))
+
+
+
+```
+
+
+And continuing with recency
+
+``` {r, echo = FALSE}
+
+r <- lapply(v[[1]], CADF::recency_from_rle)
+plot(1:length(r), unlist(r))
+
+```
+
+
+Now, lets compute recency 'at time of' for all customers. You will see the average recency for timeperiods 1 to 10, below.
+
+``` {r, echo = FALSE}
+num.customers <- length(v)
+num.timeperiods <- 10
+a <- matrix(nrow = num.customers, ncol = num.timeperiods)
+
+
+for (i in 1:length(v)) {
+
+  s <- unlist(lapply(v[[i]], CADF::recency_from_rle))
+
+  if(length(s) == num.timeperiods) {
+    a[i, ] <- s
+  }
+
+  if(length(s) != num.timeperiods) {
+    browser()
+  }
+
+}
+
+
+
+
+```
+
+
+### Migration Model -- Using the Customer Analytics Approach
+
+
+
+
+
+
+Push the customer analytics data into the ds_migration_model function as shown below
+
+``` {r, echo = FALSE}
+
+# get data in CA format
+#t[[4]]$monthly$transaction_string
+
+
+#m <- ds.migration.model(t)
+#transitions(m[,1], m[,2])
+
+
+
+
+
+
+
+
+#vv <- stats.timeof(m)
+
+
+
+
+
+```
+
+
+
+
+``` {r}
+
+
+#T1 -> T2 (buy / no buy)
+trans.matrix <- list()
+
+trans.matrix[["1 -> 2"]] <- table(m[,1], m[,2]) / sum(m[,1])
+
+trans.matrix[["2 -> 3"]] <- table(m[,2], m[,3]) / sum(m[,1])
+
+trans.matrix[["3 -> 4"]] <- table(m[,3], m[,4]) / sum(m[,1])
+
+trans.matrix[["4 -> 5"]] <- table(m[,4], m[,5]) / sum(m[,1])
+
+```
+
+We are interested in computing a probability matrix that shows how customers .. from one time period to another.  For instance, perhaps 40% of buyers who purchase in time period 1, purchase in time period 2.  (For positions 1 and 2 their purchase string looks like "11".)
+
+A buy-no-buy matrix (between period 1 and period 2) is illustrated below
+
+```{r}
+
+b.nb.matrix <- matrix(nrow = 2, ncol = 2)
+b.nb.matrix[1,1] <- "Period 1 buy followed by Period 2 buy"
+b.nb.matrix[1,2] <- "Period 1 buy followed by Period 2 no-buy"
+b.nb.matrix[2,1] <- "Period 1 no-buy followed by Period 2 buy"
+b.nb.matrix[2,2] <- "Period 1 no-buy followed by Period 2 no-buy"
+row.names(b.nb.matrix) <- c("BUY", "NO-BUY")
+colnames(b.nb.matrix) <- c("BUY", "NO-BUY")
+
+
+knitr::kable(b.nb.matrix, align="c", title="Test")
+
+```
+Now, looking at the actual data.  The transition probabilities between period 1 and period 2
+
+
+```{r}
+
+trans.matrix$`1 -> 2`
+
+```
+
+
+The transition matrix between 2 and 3
+
+```{r}
+
+
+```
+
+
+Another way we can look at this is probabilities based on recency and frequency state.  The numbers should align really closely
+
+```{r}
+
+
+x <- m[,1:2]
+y <- m[,3]
+
+x <- apply(x, 1, paste, collapse='')
+table(x,y)
+
+
+
+#rec.freq_from_purchase_string <- function(ps) {
+ # a <- tail(rle(ps))
+  #f <- ...
+#}
+
+
+
+
+```
+
+
+
+
+Goal of customer analytics is
+
+* Starting with 2 data points
+* Preprocess data in universal format
+
+The customer data format automatically stores data for various modeling scenarios.
+
+* Simple Retention Rate
+* Logistic Regression
+* BTYD Probability Models
+
+### Preparing a Dataset for Logistic Regression
+
+ Logistic regression is one way to estimate retention rates.  Below, is the proceess to create a SRM (simple retention model).  But first lets start with a 2 customer example.
+
+
+A customer that uses your product/service for 8 months will have the following data structure for the SRM model.
+
+``` {r, echo = FALSE}
+
+customer1 <- data.frame(customer = "Judy - 8 month customer"  , T = 1:8, status = c(0,0,0,0,0,0,0,1))
+
+knitr::kable(customer1)
+
+```
+
+In contrast, a customer that uses your product/service for 3 months will have the following data structure.
+
+``` {r, echo = FALSE}
+
+customer2 <- data.frame(customer = 'Bob - 3 month customer', T = 1:3, status = c(0,0,1))
+
+knitr::kable(customer2)
+
+```
+
+``` {r, echo = FALSE}
+a = rbind (customer1, customer2)
+knitr::kable (a)
+
+```
+
+
+First, extract the logistic regression data from your Customer Analytic file.
+``` {r}
+
+#ld <- ca_to_logisticreg_df(t)
+
+```
+
+``` {r, echo=FALSE}
+#knitr::kable(head(ld,10))
+
+```
+
+### The Simple Retention Model - w/ Time Variation
+
+Third ... run a time-varying version of the simple retention model.
+
+``` {r}
+#model <- ca_SRM_time_varying(ld)
+
+#print(model)
+```
+
+Whats the time varying retention rate?
+
+``` {r, results = 'asis'}
+ #j <- mapply(rhat, model$coefficients, model$coefficients[[1]])
+
+  #j <- round(j, 2)
+
+  #return (j)
+
+```
+
+### Combining Customer Data for Cohort Study
+
+The following function creates a cohort study dataset from the customer analytics data format.
+
+``` {r, results = 'asis'}
+
+cohort.study.data <- function(t) {
+
+#number of customers in file
+num.customers <- length(t)
+
+#max length of purchase string
+num.timeperiods <- max(unlist(lapply(t, function(x) nchar(x$monthly$transaction_string))))
+
+#create the matrix
+modeling.data <- matrix(0, nrow = num.customers, ncol = num.timeperiods)
+
+for (n in 1:num.customers) {
+  l <- t[[n]]$monthly$logistic_modeling_matrix[,2]
+  if (!is.null(l)) {
+    modeling.data[n, 1:length(l)] <- l
+  }
+
+
+}
+
+return(modeling.data)
+}
+
+```
+
+The following table can be produced from that dataset. But first lets look at an example.
+
+# CH6 - Advanced Analytic Techniques
+
+### The BG/BB Model
+
+A great resource for the BGBB model is the R BTYD package. [@btyd]
+
+The BG/BB model is based on advanced probability theory
+
+It deals with non-contractual purchase patterns
+
+Model inputs include recency, frequency and the number of purchase opportunities.  For each combination of recency and frequency include the number of consumers fitting that pattern.
+
+This can easily be computed from purchase strings ...  We'll look at a couple examples.
+
+
+A complete model does not need to be fitted to understand the trends in your data.  Let's look at some potential parameters and the implementatiocns.
+
+beta-binominal -> Beta distribution -> alpha and beta -> variation in transaction rates of active customers (frequency) ---> probability that an active customer makes a purchase
+
+beta-geometric -> gamma and delta -> drop out process -> once a customer drops they are dropped for good
+
+
+
+
+### Migration Model
+
+# CH7 - Implementing Customer Analytics in a Enterprise Microsoft Environment
+
+
+This book demonstrates customer analytics through the R programming language.  However, some analytics professional will be implementing customer analytics in a cloud-based Microsoft environment.  
+
+Users doing this should be familiar with the following Microsoft products:
+
+* Excel 365
+* Power Automate
+* OneDrive for Business
+* ExcelScripts
+* Azure
+
+
+#### Microsoft Excel Online (Office 365)
+
+First,it is necessary to have an Office 365 business account.  
+
+The consumer version lags in features compared to Enterprise.  It is recommended to use a Office 365 for Business account.  Alternatively, sign up for the Office 365 developer account here:
+
+#### Using ExcelScripts
+
+Microsoft has shifted into cloud technologies and is moving away from macros that were utilized with desktop versions of Excel.  The replacement for macros is called ExcelScripts and it is available on the Enterprise editions of Office 365.
+
+* [ExcelScripts](https://docs.microsoft.com/en-us/office/dev/scripts/overview/excel) is replacing Excel VBA.  See the automate tab in Office365 to access.
+
+
+[Office Scripts API Reference](https://docs.microsoft.com/en-us/javascript/api/office-scripts/overview?view=office-scripts)
+
+
+### Using OneDrive for Business
+
+Most business users are familar with OneDrive.  They have the knowleedge to upload transactional data to OneDrive.
+
+The preferred solution shifts transaction data processing to Azure.  
+
+
+\begin{tikzpicture}[>=latex]
+\node[myboxrectangle] (1) {File drop transactional \\ data to one drive};
+\node[myboxrectangle] (2) [right =of 1] {Azure converts \\to CA format} edge [<-] (1);
+\node[myboxrectangle] (3) [right =of 2] {Business user utilizes \\ Excel 365 to get results} edge [<-] (2);
+
+\end{tikzpicture}
+
+### Power Automate -
+
+Power Automate is a form of robotic process automation.  It is [described](flow.microsoft.com) by Microsoft as:
+
+* *Take care of what's important. Automate the rest.*
+* *Streamline repetitive tasks and paperless processes with Microsoft Power Automate—so you can focus your attention where it’s needed most.*
+
+Customer analytics professionals can use power automate to interface with data in the customer analytics format.
+
+1. Excel can interface with tools like Power Automate and Azure for advanced customer analytics functions.
+Process: office script → collect excel range → pass to azure function → execute customer analytics code → return result to Excel
+
+2. Creating processes that transform transactional data into the customer analytics format.  For example, user places Excel file in directory X, then accesses transformed data in Excel
+
+Create transactional-file dropbox in One Drive.
+Attach Azure process
+Excel 365 accesses CA format
+
+
+
+
+
+
+
+
+ [Create Excel custom function]( https://support.microsoft.com/en-us/office/create-custom-functions-in-excel-2f06c10b-3622-40d6-a1b2-b6748ae8231f)
+
+
+[Interface Azure with Excel Functions]( https://docs.microsoft.com/en-us/azure/azure-functions/functions-create-your-first-function-visual-studio)
+
+
+
+### Oracle Sql
+
+The quick guide for customer analytics in Oracle SQL is below:  Example uses cloud.oracle.com
+
+https://g03b73cfc22324a-transactions.adb.us-ashburn-1.oraclecloudapps.com/ords/admin/_sdw/?nav=worksheet
+
+
+#### Key Concepts
+
+##### 1 - The "with as" approach in writing SQL
+
+This approach builds a query from a variety of subqueries.  As a simple introduction lets select the number 1 from dual.
+
+select 1 from dual
+
+Now lets put that statement in a subquery
+
+\begin{verbatim}
+
+with a as (
+
+	select 1 from dual
+
+)
+
+select * from a
+
+\end{verbatim}
+
+##### 2 - Pulling the transactions dataset
+
+##### 3 - Accounting for times when a purchase is not made
+
+Let's create a hypothetical database with 5 customers and randomly choose their purchase dates.  Let's also assume that all purchases happen in the year 2021.
+
+Run this to create a table:
+
+select 'Customer1' as id, to_date('2021-01-01', 'YYYY-MM-DD') as purchase_date from dual
+
+
+Whats wrong with the table you just created
+
+\begin {verbatim}
+SELECT LEVEL t
+FROM DUAL
+CONNECT BY LEVEL <= 5
+\end {verbatim}
+
+
+
+
+##### 4 - Listagg
+
+Listagg groups information into a single string.
+
+
+#### The Complete Process
+
+\begin{verbatim}
+
+with transactionRange as (
+    select min(purchase_date) minDate,
+    max(purchase_date) maxDate
+    from transactions
+)
+
+, month_range as (
+    select ceil((maxdate - mindate) / 30) totalMonths
+    from transactionRange
+)
+
+, today as (
+    select maxDate from transactionRange
+)
+
+, tag_transactions_tp as (
+    select id, purchase_date, ceil((purchase_date - (select minDate from transactionRange)) / 30) T
+    from transactions
+)
+
+, tag_transactions_tp_2 as (
+    select
+    unique
+    id,
+    case when t = 0 then 1 else t end as t
+    from tag_transactions_tp
+)
+
+, distinct_ids as (
+    select distinct id from transactions
+)
+
+, time_template as (
+    SELECT LEVEL t
+      FROM DUAL
+CONNECT BY LEVEL <= 36)
+
+, purchase_time_matrix as (
+    select * from distinct_ids, time_template
+)
+
+, transaction_no_transaction as (
+    select
+    ptm.id,
+    ptm.T,
+    case when tt.id is null then 0 else 1 end as transaction    
+    from purchase_time_matrix ptm
+    left outer join tag_transactions_tp_2 tt on (tt.id = ptm.id) and (ptm.t = tt.t)
+    order by id, t
+)
+
+, create_purchase_string as (
+    select
+    id,
+    LISTAGG(transaction, '') WITHIN GROUP( ORDER BY t) AS transaction_string
+    from transaction_no_transaction
+    group by id
+)
+
+select * from create_purchase_string
+
+
+
+
+
+\end{verbatim}
+
+# References

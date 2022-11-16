@@ -1,0 +1,12 @@
+Encoding: UTF-8
+Package: CADF
+Title: Customer Analytics Data Format (CADF)
+Version: 0.1
+Authors@R: person("Steven", "Ludwig", email = "steve090090@outlook.com",
+                  role = c("aut", "cre"))
+Description: Provides a data management framework for transactional data, for customer analytics.
+License: GPL-3
+LazyData: true
+RoxygenNote: 7.2.1
+LinkingTo: Rcpp, R6, stats, BTYD
+Imports: Rcpp
