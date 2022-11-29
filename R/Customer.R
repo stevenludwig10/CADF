@@ -115,6 +115,9 @@ Customer <- R6::R6Class(
       #' @field df_customer$Tmonths Number of months between purchase date and first purchase date.  Rounded up to nearest month
       df_customer$Tmonths <- ceiling(as.numeric(df_customer[[2]] - min(df_customer[[2]])) / 30)
       
+      df_customer$purchase.num <- 1:nrow(df_customer)
+      
+      
       #to compute "weeks from first purchase
       df_customer$yr_week = paste(format(as.Date(df_customer[[2]]), "%Y") , "_" , format(as.Date(df_customer[[2]]), "%V"),
                                   sep ="")
