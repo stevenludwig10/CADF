@@ -2,3 +2,8 @@
 CA22.Rproj
 CADF.Rproj
 btyd_3_1_datapreparation.R
+.Rhistory
+.Rbuildignore
+output.txt
+output-out.txt
+backup.Rmd
