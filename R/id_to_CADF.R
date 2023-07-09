@@ -4,7 +4,7 @@
 #'
 #' Description here
 #'@export id_to_CADF
-id_to_CADF <- function(data) {
-  t <- Customer$new(x)
+id_to_CADF <- function(data, today.study.cutoff) {
+  t <- Customer$new(data, today.study.cutoff)
   return(t)
 }

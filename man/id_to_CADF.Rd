@@ -4,7 +4,7 @@
 \alias{id_to_CADF}
 \title{Convert to CADF for a single customer id}
 \usage{
-id_to_CADF(data)
+id_to_CADF(data, today.study.cutoff)
 }
 \description{
 `id_to_CADF` inputs is coming from a lapply operation on a split customer dataset.  If variable a is the split customer dataset then a$`1` is customer with ID 1

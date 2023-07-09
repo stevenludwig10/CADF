@@ -2,7 +2,7 @@
 #'
 #' Call Customer$new() to convert transactional data to CADF format
 # Common ways that this class is used.
-# 1.) Load transactional data.  Make sure to format dates and only pull ID and prchase date
+# 1.) Load transactional data.  Make sure to format dates and only pull ID and purchase date
 # If you are testing send a single customerid and data for a single customer to id_to_CADF.
 # If your data contains multiple customer id's
 # 2.) Split the data from 2 using the R split function
@@ -115,7 +115,7 @@ Customer <- R6::R6Class(
       #' @field df_customer$Tmonths Number of months between purchase date and first purchase date.  Rounded up to nearest month
       df_customer$Tmonths <- ceiling(as.numeric(df_customer[[2]] - min(df_customer[[2]])) / 30)
       
-      df_customer$purchase.num <- 1:nrow(df_customer)
+     
       
       
       #to compute "weeks from first purchase
@@ -143,6 +143,8 @@ Customer <- R6::R6Class(
       
       #sort for output 
       df_customer <- df_customer[order(df_customer[[2]]), ]
+      
+      df_customer$purchase.num <- 1:nrow(df_customer)
     
       
       #'@field id the customerid which identifies the customer in the CADF class.  

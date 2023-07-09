@@ -13,7 +13,7 @@ ca_to_ps_matrix <- function(ca.data, maxT) {
   
   x <- ca.data
   
-  extract.ps <- lapply(x, function(x) x$monthly$purchase_string)
+  extract.ps <- lapply(x, function(x) x$purchase_string)
   extract.ps <- unlist(extract.ps)
   
   extract.ps <- extract.ps[!is.na(extract.ps)]
