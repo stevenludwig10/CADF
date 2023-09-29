@@ -93,6 +93,17 @@ Customer <- R6::R6Class(
     
     logistic_modeling_matrix_custom = NULL,
     
+    
+    #' @field survival_modeling_matrix Stores customer's modeling matrix for survival analysis.  For suvvival analysis '1' means that the customer
+    #' has stopped being a customer.  '0' means that the customer is continuing to be a customer.
+    
+    survival_modeling_matrix = NULL,
+    
+    survival_modeling_matrix_ss = NULL,
+    
+    survival_modeling_matrix_custom = NULL,
+    
+    
     #' @description
     #' Creates a CADF profile for a given customer
     #' based on the input transactional data
@@ -211,6 +222,19 @@ Customer <- R6::R6Class(
       
       #' $field logistic_modeling_matrix_custom
       self$logistic_modeling_matrix_custom <- f_CustomerModelingMatrix(self$T_custom)
+      
+      ### May need revised.  For now I am flipping the 0/1 from the logistic modeling matrices
+      
+      #' @field survival_modeling_matrix  Stores rows for the customer that contribute to a survival modeling matrix.
+      #' 
+      self$survival_modeling_matrix <- f_CustomerSurvivalModelingMatrix(self$T)
+      
+      #' @field logistic_modeling_matrix_sc Assumes strict stayer assumption
+      self$survival_modeling_matrix_ss <- f_CustomerSurvivalModelingMatrix(self$T_ss)
+      
+      #' $field logistic_modeling_matrix_custom
+      self$survival_modeling_matrix_custom <- f_CustomerSurvivalModelingMatrix(self$T_custom)
+      
       
       
       #cleanup and data storage
